@@ -1,12 +1,3 @@
-# Déploiement automatique sur GitHub Pages à chaque push sur main.
-# Le code reste sur GitHub, le site est servi gratuitement par GitHub Pages.
-#
-# Avant la première utilisation :
-#  1. Settings > Pages > Source : "GitHub Actions"
-#  2. Settings > Secrets and variables > Actions > ajoute :
-#       VITE_SUPABASE_URL
-#       VITE_SUPABASE_ANON_KEY
-
 name: Deploy to GitHub Pages
 
 on:
@@ -33,6 +24,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          BASE_PATH: ${{ secrets.BASE_PATH }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
