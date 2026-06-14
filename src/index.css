@@ -5,6 +5,11 @@
 * { -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Syne', sans-serif; }
 .border-3 { border-width: 3px; }
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 8px); }
 .prose-sm h3 { font-weight: 700; margin: 12px 0 6px; color: #a78bfa; }
 .prose-sm p { margin-bottom: 8px; }
 .prose-sm ul { padding-left: 16px; margin-bottom: 8px; list-style: disc; }
