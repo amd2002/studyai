@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 
-const COLORS = ['#1a1a2e','#ef4444','#6c63ff','#10b981','#f59e0b','#06b6d4','#ffffff']
+const COLORS = ['#1a1a2e', '#ef4444', '#7C6FFF', '#10b981', '#F0C96A', '#22d3ee', '#ffffff']
 type Grid = 'blank' | 'tian' | 'lines'
 
 export default function Slate() {
-  const canvasRef   = useRef<HTMLCanvasElement>(null)
-  const wrapRef     = useRef<HTMLDivElement>(null)
-  const [color, setColor]   = useState('#1a1a2e')
-  const [brush, setBrush]   = useState(5)
-  const [tool, setTool]     = useState<'pen'|'eraser'>('pen')
-  const [grid, setGrid]     = useState<Grid>('blank')
+  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const wrapRef    = useRef<HTMLDivElement>(null)
+  const gridRef    = useRef<Grid>('blank')
+  const drawing    = useRef(false)
+  const lastPos    = useRef({ x: 0, y: 0 })
+
+  const [color, setColor]     = useState('#1a1a2e')
+  const [brush, setBrush]     = useState(6)
+  const [tool, setTool]       = useState<'pen'|'eraser'>('pen')
+  const [grid, setGrid]       = useState<Grid>('blank')
   const [history, setHistory] = useState<ImageData[]>([])
-  const drawing = useRef(false)
-  const lastPos = useRef({ x: 0, y: 0 })
-  const gridRef = useRef<Grid>('blank')
 
   const ctx = () => canvasRef.current?.getContext('2d') ?? null
 
@@ -21,23 +22,23 @@ export default function Slate() {
     const canvas = canvasRef.current; if (!canvas) return
     const c = ctx()!; const w = canvas.width; const h = canvas.height
     if (w === 0 || h === 0) return
-    c.fillStyle = '#fefefe'; c.fillRect(0, 0, w, h)
+    c.fillStyle = '#fafafa'; c.fillRect(0, 0, w, h)
     if (g === 'tian') {
       const cell = Math.min(w, h) * 0.55
       const cols = Math.floor(w / cell), rows = Math.floor(h / cell)
       const ox = (w - cols * cell) / 2, oy = (h - rows * cell) / 2
       for (let r = 0; r < rows; r++) for (let col = 0; col < cols; col++) {
         const x = ox + col * cell, y = oy + r * cell
-        c.strokeStyle = '#ffcccc'; c.lineWidth = 1; c.setLineDash([])
+        c.strokeStyle = '#ffc0c0'; c.lineWidth = 1; c.setLineDash([])
         c.strokeRect(x, y, cell, cell)
-        c.strokeStyle = '#ffdddd'; c.setLineDash([4, 4])
+        c.strokeStyle = '#ffd8d8'; c.setLineDash([4, 4])
         c.beginPath(); c.moveTo(x + cell/2, y); c.lineTo(x + cell/2, y + cell); c.stroke()
         c.beginPath(); c.moveTo(x, y + cell/2); c.lineTo(x + cell, y + cell/2); c.stroke()
         c.setLineDash([])
       }
     } else if (g === 'lines') {
-      c.strokeStyle = '#cce'; c.lineWidth = 1; c.setLineDash([])
-      for (let y = 40; y < h; y += 40) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke() }
+      c.strokeStyle = '#e0e0f8'; c.lineWidth = 1; c.setLineDash([])
+      for (let y = 44; y < h; y += 44) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke() }
     }
   }
 
@@ -46,47 +47,34 @@ export default function Slate() {
     if (!canvas || !wrap) return
     const rect = wrap.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
-    // Save current drawing before resize
     const c = ctx()
     const img = (c && canvas.width > 0 && canvas.height > 0)
-      ? c.getImageData(0, 0, canvas.width, canvas.height)
-      : null
+      ? c.getImageData(0, 0, canvas.width, canvas.height) : null
     canvas.width  = Math.floor(rect.width)
     canvas.height = Math.floor(rect.height)
     drawGrid(gridRef.current)
-    // Restore drawing
-    if (img && c) {
-      try { c.putImageData(img, 0, 0) } catch (_) {}
-    }
+    if (img && c) { try { c.putImageData(img, 0, 0) } catch (_) {} }
   }
 
   useEffect(() => {
-    // Small delay to let layout settle before measuring
-    const t = setTimeout(() => { resize() }, 50)
+    const t = setTimeout(() => resize(), 60)
     window.addEventListener('resize', resize)
     return () => { clearTimeout(t); window.removeEventListener('resize', resize) }
   }, [])
 
-  useEffect(() => {
-    gridRef.current = grid
-    drawGrid(grid)
-  }, [grid])
+  useEffect(() => { gridRef.current = grid; drawGrid(grid) }, [grid])
 
   const getPos = (e: React.PointerEvent) => {
     const r = canvasRef.current!.getBoundingClientRect()
-    const scaleX = canvasRef.current!.width  / r.width
-    const scaleY = canvasRef.current!.height / r.height
-    return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY }
+    const sx = canvasRef.current!.width  / r.width
+    const sy = canvasRef.current!.height / r.height
+    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy }
   }
 
   const onDown = (e: React.PointerEvent) => {
     drawing.current = true
-    const c = ctx()!
-    const canvas = canvasRef.current!
-    setHistory(h => {
-      const snap = c.getImageData(0, 0, canvas.width, canvas.height)
-      return [...h.slice(-20), snap]
-    })
+    const c = ctx()!; const canvas = canvasRef.current!
+    setHistory(h => [...h.slice(-20), c.getImageData(0, 0, canvas.width, canvas.height)])
     lastPos.current = getPos(e)
   }
 
@@ -95,8 +83,8 @@ export default function Slate() {
     e.preventDefault()
     const c = ctx()!; const p = getPos(e)
     c.lineCap = 'round'; c.lineJoin = 'round'
-    c.strokeStyle = tool === 'eraser' ? '#fefefe' : color
-    c.lineWidth   = tool === 'eraser' ? brush * 4 : brush
+    c.strokeStyle = tool === 'eraser' ? '#fafafa' : color
+    c.lineWidth   = tool === 'eraser' ? brush * 5 : brush
     c.beginPath(); c.moveTo(lastPos.current.x, lastPos.current.y); c.lineTo(p.x, p.y); c.stroke()
     lastPos.current = p
   }
@@ -105,8 +93,7 @@ export default function Slate() {
 
   const undo = () => {
     if (!history.length) return
-    const snap = history[history.length - 1]
-    ctx()!.putImageData(snap, 0, 0)
+    ctx()!.putImageData(history[history.length - 1], 0, 0)
     setHistory(h => h.slice(0, -1))
   }
 
@@ -126,52 +113,88 @@ export default function Slate() {
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-s1 border-b border-border flex-shrink-0 flex-wrap">
-        <div className="flex gap-1">
-          <button onClick={() => setTool('pen')}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${tool==='pen' ? 'bg-accent text-white' : 'bg-s2 border border-border'}`}>✏️</button>
-          <button onClick={() => setTool('eraser')}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${tool==='eraser' ? 'bg-accent text-white' : 'bg-s2 border border-border'}`}>🧽</button>
-        </div>
-        <div className="flex gap-1.5">
-          {COLORS.map(c => (
-            <button key={c} onClick={() => { setColor(c); setTool('pen') }}
-              className={`w-6 h-6 rounded-full border-2 transition ${color===c && tool==='pen' ? 'border-white scale-110' : 'border-transparent'}`}
-              style={{ background: c }} />
+      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 flex-wrap"
+        style={{ background: 'rgba(8,8,16,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(124,111,255,0.1)' }}>
+
+        {/* Pen / Eraser */}
+        <div className="flex gap-1.5 p-1 rounded-xl" style={{ background: 'rgba(124,111,255,0.08)', border: '1px solid rgba(124,111,255,0.12)' }}>
+          {[
+            { t: 'pen' as const, icon: '✏️', label: 'Stylo' },
+            { t: 'eraser' as const, icon: '⬜', label: 'Gomme' },
+          ].map(b => (
+            <button key={b.t} onClick={() => setTool(b.t)} title={b.label}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition-all"
+              style={tool === b.t ? { background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 2px 8px rgba(124,111,255,0.3)' } : {}}>
+              {b.icon}
+            </button>
           ))}
         </div>
-        <div className="flex gap-1 ml-auto">
+
+        {/* Colors */}
+        <div className="flex gap-2 flex-1 justify-center">
+          {COLORS.map(c => (
+            <button key={c} onClick={() => { setColor(c); setTool('pen') }}
+              className="w-6 h-6 rounded-full transition-all duration-200"
+              style={{
+                background: c,
+                border: color === c && tool === 'pen' ? '2px solid #fff' : '2px solid transparent',
+                boxShadow: color === c && tool === 'pen' ? `0 0 10px ${c}88` : 'none',
+                transform: color === c && tool === 'pen' ? 'scale(1.2)' : 'scale(1)',
+              }} />
+          ))}
+        </div>
+
+        {/* Brush sizes */}
+        <div className="flex gap-1.5 p-1 rounded-xl" style={{ background: 'rgba(124,111,255,0.08)', border: '1px solid rgba(124,111,255,0.12)' }}>
           {[3, 6, 12].map(s => (
             <button key={s} onClick={() => setBrush(s)}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center bg-s2 border transition ${brush===s ? 'border-accent' : 'border-border'}`}>
-              <div className="rounded-full bg-txt" style={{ width: s, height: s }} />
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+              style={brush === s ? { background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)' } : {}}>
+              <div className="rounded-full" style={{ width: s + 2, height: s + 2, background: brush === s ? '#fff' : '#6B6880' }} />
             </button>
           ))}
         </div>
       </div>
 
       {/* Grid selector */}
-      <div className="flex gap-2 px-3 py-1.5 bg-s1 border-b border-border flex-shrink-0">
-        {(['blank','tian','lines'] as Grid[]).map(g => (
+      <div className="flex gap-2 px-4 py-2 flex-shrink-0"
+        style={{ background: 'rgba(8,8,16,0.7)', borderBottom: '1px solid rgba(124,111,255,0.08)' }}>
+        {(['blank', 'tian', 'lines'] as Grid[]).map(g => (
           <button key={g} onClick={() => setGrid(g)}
-            className={`flex-1 py-1 rounded-lg text-xs font-mono transition ${grid===g ? 'bg-accent text-white' : 'bg-s2 border border-border text-muted'}`}>
+            className="flex-1 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all duration-200"
+            style={grid === g
+              ? { background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', color: '#fff', boxShadow: '0 2px 8px rgba(124,111,255,0.3)' }
+              : { background: 'rgba(124,111,255,0.06)', border: '1px solid rgba(124,111,255,0.1)', color: '#6B6880' }}>
             {g === 'blank' ? 'Blanc' : g === 'tian' ? '田字格' : 'Lignes'}
           </button>
         ))}
       </div>
 
       {/* Canvas */}
-      <div ref={wrapRef} className="flex-1 relative overflow-hidden" style={{ background: '#fefefe', touchAction: 'none' }}>
+      <div ref={wrapRef} className="flex-1 relative overflow-hidden" style={{ touchAction: 'none' }}>
         <canvas ref={canvasRef}
           style={{ display: 'block', width: '100%', height: '100%', touchAction: 'none', cursor: 'crosshair' }}
           onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp} />
       </div>
 
-      {/* Bottom actions */}
-      <div className="flex gap-2 px-3 py-2 bg-s1 border-t border-border flex-shrink-0">
-        <button onClick={undo}    className="flex-1 py-2.5 bg-s2 border border-border rounded-xl text-sm font-bold">↩ Annuler</button>
-        <button onClick={clear}   className="flex-1 py-2.5 bg-s2 border border-border rounded-xl text-sm font-bold">🗑 Effacer</button>
-        <button onClick={saveImg} className="flex-1 py-2.5 bg-accent text-white rounded-xl text-sm font-bold">💾 Garder</button>
+      {/* Actions */}
+      <div className="flex gap-3 px-4 py-3 flex-shrink-0"
+        style={{ background: 'rgba(8,8,16,0.9)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(124,111,255,0.1)' }}>
+        <button onClick={undo}
+          className="flex-1 py-3 rounded-2xl text-sm font-semibold text-muted transition-all active:scale-95"
+          style={{ background: 'rgba(124,111,255,0.06)', border: '1px solid rgba(124,111,255,0.12)' }}>
+          ↩ Annuler
+        </button>
+        <button onClick={clear}
+          className="flex-1 py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444' }}>
+          ✕ Effacer
+        </button>
+        <button onClick={saveImg}
+          className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 4px 12px rgba(124,111,255,0.3)' }}>
+          ↓ Garder
+        </button>
       </div>
     </div>
   )
