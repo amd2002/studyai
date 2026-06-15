@@ -13,12 +13,14 @@ export default function Slate() {
   const [history, setHistory] = useState<ImageData[]>([])
   const drawing = useRef(false)
   const lastPos = useRef({ x: 0, y: 0 })
+  const gridRef = useRef<Grid>('blank')
 
   const ctx = () => canvasRef.current?.getContext('2d') ?? null
 
   const drawGrid = (g: Grid) => {
     const canvas = canvasRef.current; if (!canvas) return
     const c = ctx()!; const w = canvas.width; const h = canvas.height
+    if (w === 0 || h === 0) return
     c.fillStyle = '#fefefe'; c.fillRect(0, 0, w, h)
     if (g === 'tian') {
       const cell = Math.min(w, h) * 0.55
@@ -43,22 +45,48 @@ export default function Slate() {
     const canvas = canvasRef.current; const wrap = wrapRef.current
     if (!canvas || !wrap) return
     const rect = wrap.getBoundingClientRect()
-    canvas.width = rect.width; canvas.height = rect.height
-    drawGrid(grid)
+    if (rect.width === 0 || rect.height === 0) return
+    // Save current drawing before resize
+    const c = ctx()
+    const img = (c && canvas.width > 0 && canvas.height > 0)
+      ? c.getImageData(0, 0, canvas.width, canvas.height)
+      : null
+    canvas.width  = Math.floor(rect.width)
+    canvas.height = Math.floor(rect.height)
+    drawGrid(gridRef.current)
+    // Restore drawing
+    if (img && c) {
+      try { c.putImageData(img, 0, 0) } catch (_) {}
+    }
   }
 
-  useEffect(() => { resize(); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize) }, [])
-  useEffect(() => { drawGrid(grid) }, [grid])
+  useEffect(() => {
+    // Small delay to let layout settle before measuring
+    const t = setTimeout(() => { resize() }, 50)
+    window.addEventListener('resize', resize)
+    return () => { clearTimeout(t); window.removeEventListener('resize', resize) }
+  }, [])
+
+  useEffect(() => {
+    gridRef.current = grid
+    drawGrid(grid)
+  }, [grid])
 
   const getPos = (e: React.PointerEvent) => {
     const r = canvasRef.current!.getBoundingClientRect()
-    return { x: e.clientX - r.left, y: e.clientY - r.top }
+    const scaleX = canvasRef.current!.width  / r.width
+    const scaleY = canvasRef.current!.height / r.height
+    return { x: (e.clientX - r.left) * scaleX, y: (e.clientY - r.top) * scaleY }
   }
 
   const onDown = (e: React.PointerEvent) => {
     drawing.current = true
     const c = ctx()!
-    setHistory(h => { const snap = c.getImageData(0, 0, canvasRef.current!.width, canvasRef.current!.height); return [...h.slice(-20), snap] })
+    const canvas = canvasRef.current!
+    setHistory(h => {
+      const snap = c.getImageData(0, 0, canvas.width, canvas.height)
+      return [...h.slice(-20), snap]
+    })
     lastPos.current = getPos(e)
   }
 
@@ -82,7 +110,11 @@ export default function Slate() {
     setHistory(h => h.slice(0, -1))
   }
 
-  const clear = () => { setHistory(h => { const c = ctx()!; return [...h, c.getImageData(0,0,canvasRef.current!.width,canvasRef.current!.height)] }); drawGrid(grid) }
+  const clear = () => {
+    const c = ctx()!; const canvas = canvasRef.current!
+    setHistory(h => [...h, c.getImageData(0, 0, canvas.width, canvas.height)])
+    drawGrid(grid)
+  }
 
   const saveImg = () => {
     const a = document.createElement('a')
@@ -95,15 +127,12 @@ export default function Slate() {
     <div className="h-full flex flex-col">
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 bg-s1 border-b border-border flex-shrink-0 flex-wrap">
-        {/* Tool */}
         <div className="flex gap-1">
           <button onClick={() => setTool('pen')}
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${tool==='pen' ? 'bg-accent text-white' : 'bg-s2 border border-border'}`}>✏️</button>
           <button onClick={() => setTool('eraser')}
             className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm transition ${tool==='eraser' ? 'bg-accent text-white' : 'bg-s2 border border-border'}`}>🧽</button>
         </div>
-
-        {/* Colors */}
         <div className="flex gap-1.5">
           {COLORS.map(c => (
             <button key={c} onClick={() => { setColor(c); setTool('pen') }}
@@ -111,8 +140,6 @@ export default function Slate() {
               style={{ background: c }} />
           ))}
         </div>
-
-        {/* Brush size */}
         <div className="flex gap-1 ml-auto">
           {[3, 6, 12].map(s => (
             <button key={s} onClick={() => setBrush(s)}
