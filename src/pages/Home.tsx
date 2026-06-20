@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import ChatPanel from '@/components/ChatPanel'
 import type { Course } from '@/types'
 
 const SUBJECTS: Record<string, { color: string; glow: string; icon: string; grad: string }> = {
@@ -14,6 +15,7 @@ const SC = (s: string) => SUBJECTS[s] || SUBJECTS['Autre']
 export default function Home({ onGoQuiz, onTab }: { onGoQuiz: (q: any[], w: any[]) => void; onTab: (t: string) => void }) {
   const [courses, setCourses] = useState<Course[]>([])
   const [filter, setFilter] = useState('Tous')
+  const [showChat, setShowChat] = useState(false)
 
   useEffect(() => { api.listCourses().then(setCourses).catch(console.error) }, [])
 
@@ -27,7 +29,7 @@ export default function Home({ onGoQuiz, onTab }: { onGoQuiz: (q: any[], w: any[
   const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-none">
+    <div className="h-full overflow-y-auto scrollbar-none relative">
       {/* Hero section */}
       <div className="px-5 pt-5 pb-4 relative">
         <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
@@ -112,7 +114,7 @@ export default function Home({ onGoQuiz, onTab }: { onGoQuiz: (q: any[], w: any[
             <p className="text-txt2 text-sm font-medium mb-1">Aucun cours encore</p>
             <p className="text-muted text-xs">Scanne ta première leçon pour commencer</p>
           </div>
-        ) : filtered.map((c, i) => {
+        ) : filtered.map((c) => {
           const sc = SC(c.subject)
           return (
             <div key={c.id} className="rounded-2xl p-4 mb-3 relative overflow-hidden transition-all active:scale-98"
@@ -151,6 +153,17 @@ export default function Home({ onGoQuiz, onTab }: { onGoQuiz: (q: any[], w: any[
           )
         })}
       </div>
+
+      {/* Floating global chat button */}
+      <button onClick={() => setShowChat(true)}
+        className="fixed bottom-24 right-5 w-14 h-14 rounded-full flex items-center justify-center text-2xl text-white transition-all active:scale-90 z-40"
+        style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 4px 24px rgba(124,111,255,0.5)' }}>
+        💬
+      </button>
+
+      {showChat && (
+        <ChatPanel course={null} allCourses={courses} onClose={() => setShowChat(false)} />
+      )}
     </div>
   )
 }

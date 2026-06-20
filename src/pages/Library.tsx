@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import ChatPanel from '@/components/ChatPanel'
 import type { Course } from '@/types'
 
 const SUBJECTS: Record<string, { color: string; glow: string; icon: string; grad: string }> = {
@@ -17,6 +18,7 @@ export default function Library({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
   const [view, setView]         = useState<'subject'|'date'>('subject')
   const [expanded, setExpanded] = useState<string|null>(null)
   const [detail, setDetail]     = useState<Course|null>(null)
+  const [showChat, setShowChat] = useState(false)
 
   useEffect(() => { load() }, [])
   const load = () => api.listCourses().then(setCourses).catch(console.error)
@@ -49,7 +51,7 @@ export default function Library({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
   if (detail) {
     const sc = SC(detail.subject)
     return (
-      <div className="h-full overflow-y-auto scrollbar-none pb-28">
+      <div className="h-full overflow-y-auto scrollbar-none pb-28 relative">
         <div className="px-5 pt-5">
           <button onClick={() => setDetail(null)} className="flex items-center gap-2 text-muted text-sm mb-5">
             ← Retour
@@ -100,7 +102,7 @@ export default function Library({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
           </div>
 
           {/* Actions */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             {detail.quiz?.length > 0 && (
               <button onClick={() => { setDetail(null); onGoQuiz(detail.quiz, detail.words||[]) }}
                 className="rounded-2xl p-3.5 text-sm font-bold transition-all active:scale-95"
@@ -116,6 +118,13 @@ export default function Library({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
               </button>
             )}
           </div>
+
+          {/* Chat button for this course */}
+          <button onClick={() => setShowChat(true)}
+            className="w-full rounded-2xl p-3.5 text-sm font-bold mb-4 transition-all active:scale-95 flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, rgba(124,111,255,0.15), rgba(167,139,250,0.08))', border: '1px solid rgba(124,111,255,0.25)', color: '#A78BFA' }}>
+            💬 Poser une question sur ce cours
+          </button>
 
           {/* Summary */}
           <div className="rounded-2xl p-4 mb-3"
@@ -152,6 +161,10 @@ export default function Library({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
             ✕ Supprimer ce cours
           </button>
         </div>
+
+        {showChat && (
+          <ChatPanel course={detail} allCourses={courses} onClose={() => setShowChat(false)} />
+        )}
       </div>
     )
   }
