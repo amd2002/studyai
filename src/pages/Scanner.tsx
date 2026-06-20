@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '@/lib/api'
+import { extractTextFromImage } from '@/lib/ocr'
 import type { AnalyzeResult } from '@/types'
 
 const SUBJECTS = ['Chinois', 'Mathématiques', 'Sciences', 'Histoire', 'Autre']
@@ -7,42 +8,82 @@ const SUBJECTS_ICONS: Record<string, string> = {
   'Chinois': '🇨🇳', 'Mathématiques': '📐', 'Sciences': '🔬', 'Histoire': '📜', 'Autre': '📚'
 }
 
+type Stage = 'idle' | 'ocr' | 'analyzing'
+
 export default function Scanner({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) => void }) {
   const [subject, setSubject]     = useState('Chinois')
   const [lang, setLang]           = useState('français')
   const [imageData, setImageData] = useState<string | null>(null)
   const [imageType, setImageType] = useState('image/png')
-  const [loading, setLoading]     = useState(false)
+  const [stage, setStage]         = useState<Stage>('idle')
   const [result, setResult]       = useState<AnalyzeResult | null>(null)
   const [error, setError]         = useState('')
   const [saved, setSaved]         = useState(false)
   const [activeTab, setActiveTab] = useState<'explication'|'mots'|'grammaire'|'plan'>('explication')
+  const [ocrMode, setOcrMode]     = useState<'text'|'image'|null>(null)
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = ev => { setImageData(ev.target?.result as string); setImageType(file.type); setResult(null); setSaved(false) }
+    reader.onload = ev => {
+      setImageData(ev.target?.result as string)
+      setImageType(file.type)
+      setResult(null); setSaved(false); setOcrMode(null)
+    }
     reader.readAsDataURL(file)
   }
 
   const analyze = async () => {
     if (!imageData) return
-    setLoading(true); setError(''); setResult(null)
+    setError(''); setResult(null)
+
+    // Step 1: try OCR first to save tokens — extract text locally before calling Claude.
+    setStage('ocr')
+    const ocr = await extractTextFromImage(imageData)
+
+    setStage('analyzing')
     try {
-      const res = await api.analyze({ image_base64: imageData.split(',')[1], image_media_type: imageType, subject, explain_language: lang })
+      let res: AnalyzeResult
+      if (ocr.success) {
+        // Text extraction worked well enough — send text only (cheap, fast).
+        setOcrMode('text')
+        res = await api.analyze({
+          text_content: ocr.text,
+          subject,
+          explain_language: lang,
+        })
+      } else {
+        // OCR failed or text too short (e.g. diagrams, handwriting, blurry photo)
+        // — fall back to sending the image directly so Claude can see it.
+        setOcrMode('image')
+        res = await api.analyze({
+          image_base64: imageData.split(',')[1],
+          image_media_type: imageType,
+          subject,
+          explain_language: lang,
+        })
+      }
       setResult(res)
-    } catch (e: any) { setError(e.message) }
-    finally { setLoading(false) }
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setStage('idle')
+    }
   }
 
   const save = async () => {
     if (!result) return
-    try { await api.createCourse({ ...result, kind: 'lesson' }); setSaved(true) }
-    catch (e: any) { setError(e.message) }
+    setError('')
+    try {
+      await api.createCourse({ ...result, kind: 'lesson' })
+      setSaved(true)
+    } catch (e: any) {
+      setError(`Erreur de sauvegarde : ${e.message}`)
+    }
   }
 
-  const reset = () => { setImageData(null); setResult(null); setSaved(false); setError('') }
+  const reset = () => { setImageData(null); setResult(null); setSaved(false); setError(''); setOcrMode(null) }
 
   const CONTENT_TABS = [
     { id: 'explication', icon: '◎', label: 'Cours' },
@@ -59,9 +100,6 @@ export default function Scanner({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
           <>
             {/* Config */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              {[
-                { val: subject, setter: setSubject, opts: SUBJECTS, icons: SUBJECTS_ICONS },
-              ].map((_, i) => null)}
               <select value={subject} onChange={e => setSubject(e.target.value)}
                 className="px-4 py-3 rounded-2xl text-sm outline-none text-txt font-medium"
                 style={{ background: 'rgba(124,111,255,0.06)', border: '1px solid rgba(124,111,255,0.15)' }}>
@@ -94,7 +132,7 @@ export default function Scanner({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
               <input type="file" accept="image/*,application/pdf" capture="environment" onChange={handleFile} className="hidden" />
             </label>
 
-            {imageData && !loading && (
+            {imageData && stage === 'idle' && (
               <button onClick={analyze}
                 className="w-full py-4 rounded-2xl font-bold text-sm text-white mb-3 transition-all active:scale-98 relative overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 4px 24px rgba(124,111,255,0.4)' }}>
@@ -103,12 +141,23 @@ export default function Scanner({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
               </button>
             )}
 
-            {loading && (
+            {stage === 'ocr' && (
+              <div className="text-center py-12">
+                <div className="w-14 h-14 rounded-full border-2 border-s3 border-t-accent animate-spin mx-auto mb-4"
+                  style={{ boxShadow: '0 0 20px rgba(124,111,255,0.3)' }} />
+                <p className="text-txt2 font-medium text-sm mb-1">Lecture du texte...</p>
+                <p className="text-muted text-xs">Extraction locale pour économiser des tokens</p>
+              </div>
+            )}
+
+            {stage === 'analyzing' && (
               <div className="text-center py-12">
                 <div className="w-14 h-14 rounded-full border-2 border-s3 border-t-accent animate-spin mx-auto mb-4"
                   style={{ boxShadow: '0 0 20px rgba(124,111,255,0.3)' }} />
                 <p className="text-txt2 font-medium text-sm mb-1">Analyse en cours</p>
-                <p className="text-muted text-xs">Claude lit ton cours...</p>
+                <p className="text-muted text-xs">
+                  {ocrMode === 'text' ? 'Claude lit le texte extrait...' : 'Claude analyse l\'image...'}
+                </p>
               </div>
             )}
 
@@ -136,6 +185,20 @@ export default function Scanner({ onGoQuiz }: { onGoQuiz: (q: any[], w: any[]) =
                 {saved ? '✓ Sauvegardé' : '↓ Sauvegarder'}
               </button>
             </div>
+
+            {error && (
+              <div className="rounded-2xl px-4 py-3 text-sm mb-3" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444' }}>
+                {error}
+              </div>
+            )}
+
+            {/* OCR mode badge */}
+            {ocrMode && (
+              <div className="mb-3 text-[10px] font-mono px-3 py-1.5 rounded-full inline-block"
+                style={{ background: ocrMode === 'text' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)', color: ocrMode === 'text' ? '#10b981' : '#f59e0b', border: `1px solid ${ocrMode === 'text' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}` }}>
+                {ocrMode === 'text' ? '⚡ Texte extrait localement (économie de tokens)' : '🖼 Image envoyée (texte illisible)'}
+              </div>
+            )}
 
             {/* Result card */}
             <div className="rounded-3xl p-4 mb-4 relative overflow-hidden"

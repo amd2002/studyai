@@ -34,12 +34,16 @@ export const api = {
   },
 
   async createCourse(course: Partial<Course>): Promise<Course> {
-    const { data: userData } = await supabase.auth.getUser()
+    const { data: userData, error: userErr } = await supabase.auth.getUser()
+    if (userErr) throw userErr
+    if (!userData.user) throw new Error('Utilisateur non authentifié — reconnecte-toi.')
+
     const { data, error } = await supabase
       .from('courses')
-      .insert({ ...course, user_id: userData.user?.id })
+      .insert({ ...course, user_id: userData.user.id })
       .select()
       .single()
+
     if (error) throw error
     return data as Course
   },
