@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import Login from '@/pages/Login'
 import Home from '@/pages/Home'
-import Scanner from '@/pages/Scanner'
+import Scanner from '@/pages/Scanner2'
 import Library from '@/pages/Library'
 import Quiz from '@/pages/Quiz'
 import Slate from '@/pages/Slate'
+import Settings from '@/pages/Settings'
 
 const TABS = [
   { id: 'home',    icon: '⌂',  label: 'Accueil' },
@@ -19,9 +20,9 @@ const TABS = [
 function AppInner() {
   const { user, loading } = useAuth()
   const [tab, setTab] = useState('home')
+  const [showSettings, setShowSettings] = useState(false)
   const [quizData, setQuizData] = useState<any[]>([])
   const [flashData, setFlashData] = useState<any[]>([])
-  const [prevTab, setPrevTab] = useState('home')
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-bg gap-4">
@@ -34,11 +35,6 @@ function AppInner() {
 
   const goQuiz = (quiz: any[], words: any[]) => {
     setQuizData(quiz); setFlashData(words); setTab('quiz')
-  }
-
-  const changeTab = (t: string) => {
-    setPrevTab(tab)
-    setTab(t)
   }
 
   const initials = user.email?.slice(0,2).toUpperCase() || 'ME'
@@ -58,9 +54,11 @@ function AppInner() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-accent2 border border-accent/30" style={{ background: 'rgba(124,111,255,0.1)' }}>
+          <button onClick={() => setShowSettings(true)}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-accent2 border border-accent/30 transition-all active:scale-90"
+            style={{ background: 'rgba(124,111,255,0.1)' }}>
             {initials}
-          </div>
+          </button>
           <button onClick={() => supabase.auth.signOut()}
             className="text-xs px-3 py-1.5 rounded-lg text-muted border transition hover:text-txt"
             style={{ borderColor: 'rgba(124,111,255,0.15)', background: 'rgba(124,111,255,0.05)' }}>
@@ -71,37 +69,44 @@ function AppInner() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <div className={tab === 'home'    ? 'h-full anim-up' : 'hidden'}><Home    onGoQuiz={goQuiz} onTab={changeTab} /></div>
-        <div className={tab === 'scanner' ? 'h-full anim-up' : 'hidden'}><Scanner onGoQuiz={goQuiz} /></div>
-        <div className={tab === 'slate'   ? 'h-full anim-up' : 'hidden'}><Slate /></div>
-        <div className={tab === 'quiz'    ? 'h-full anim-up' : 'hidden'}><Quiz quiz={quizData} words={flashData} /></div>
-        <div className={tab === 'library' ? 'h-full anim-up' : 'hidden'}><Library onGoQuiz={goQuiz} /></div>
+        {showSettings ? (
+          <Settings onClose={() => setShowSettings(false)} />
+        ) : (
+          <>
+            <div className={tab === 'home'    ? 'h-full anim-up' : 'hidden'}><Home    onGoQuiz={goQuiz} onTab={setTab} /></div>
+            <div className={tab === 'scanner' ? 'h-full anim-up' : 'hidden'}><Scanner onGoQuiz={goQuiz} /></div>
+            <div className={tab === 'slate'   ? 'h-full anim-up' : 'hidden'}><Slate /></div>
+            <div className={tab === 'quiz'    ? 'h-full anim-up' : 'hidden'}><Quiz quiz={quizData} words={flashData} /></div>
+            <div className={tab === 'library' ? 'h-full anim-up' : 'hidden'}><Library onGoQuiz={goQuiz} /></div>
+          </>
+        )}
       </div>
 
       {/* Bottom Tab Bar */}
-      <nav className="flex-shrink-0 safe-bottom" style={{ background: 'rgba(8,8,16,0.95)', backdropFilter: 'blur(30px)', borderTop: '1px solid rgba(124,111,255,0.1)' }}>
-        <div className="flex px-2 py-1">
-          {TABS.map(t => {
-            const active = tab === t.id
-            return (
-              <button key={t.id} onClick={() => changeTab(t.id)}
-                className="flex-1 flex flex-col items-center py-2 gap-1 relative transition-all duration-200">
-                {active && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #7C6FFF, transparent)' }} />
-                )}
-                <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200 ${active ? 'scale-110' : 'scale-100'}`}
-                  style={active ? { background: 'rgba(124,111,255,0.15)', boxShadow: '0 0 16px rgba(124,111,255,0.2)' } : {}}>
-                  <span className={`text-lg font-bold transition-all ${active ? 'text-accent2' : 'text-muted'}`}
-                    style={{ fontFamily: 'Inter' }}>{t.icon}</span>
-                </div>
-                <span className={`text-[9px] font-mono tracking-wider transition-all ${active ? 'text-accent2' : 'text-muted'}`}>
-                  {t.label.toUpperCase()}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      {!showSettings && (
+        <nav className="flex-shrink-0 safe-bottom" style={{ background: 'rgba(8,8,16,0.95)', backdropFilter: 'blur(30px)', borderTop: '1px solid rgba(124,111,255,0.1)' }}>
+          <div className="flex px-2 py-1">
+            {TABS.map(t => {
+              const active = tab === t.id
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className="flex-1 flex flex-col items-center py-2 gap-1 relative transition-all duration-200">
+                  {active && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #7C6FFF, transparent)' }} />
+                  )}
+                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200 ${active ? 'scale-110' : 'scale-100'}`}
+                    style={active ? { background: 'rgba(124,111,255,0.15)', boxShadow: '0 0 16px rgba(124,111,255,0.2)' } : {}}>
+                    <span className={`text-lg font-bold transition-all ${active ? 'text-accent2' : 'text-muted'}`}>{t.icon}</span>
+                  </div>
+                  <span className={`text-[9px] font-mono tracking-wider transition-all ${active ? 'text-accent2' : 'text-muted'}`}>
+                    {t.label.toUpperCase()}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   )
 }
