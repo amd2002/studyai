@@ -23,10 +23,10 @@ export default {
         muted:   '#6B6880',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        syne: ['Syne', 'sans-serif'],
-        mono: ['Syne Mono', 'monospace'],
-        ser:  ['Noto Serif SC', 'serif'],
+        sans: ['-apple-system', 'PingFang SC', 'Segoe UI', 'Roboto', 'sans-serif'],
+        syne: ['-apple-system', 'PingFang SC', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        ser:  ['Kaiti SC', 'STKaiti', 'KaiTi', 'PingFang SC', 'Noto Sans CJK SC', 'serif'],
       },
       backgroundImage: {
         'grad-accent': 'linear-gradient(135deg, #7C6FFF, #A78BFA)',

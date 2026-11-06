@@ -44,12 +44,12 @@ export default function Login() {
         <div className="text-center mb-10">
           <div className="w-16 h-16 rounded-3xl mx-auto mb-5 flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 0 40px rgba(124,111,255,0.4), 0 0 80px rgba(124,111,255,0.15)' }}>
-            <span className="text-white text-3xl font-bold font-syne">S</span>
+            <span className="text-white text-3xl font-ser">字</span>
           </div>
           <h1 className="font-syne font-bold text-3xl mb-1">
-            Study<span className="text-accent2">AI</span>
+            <span className="font-ser">汉字圈</span>
           </h1>
-          <p className="text-muted text-sm">Ton cahier intelligent</p>
+          <p className="text-muted text-sm">Lire et écrire tes caractères</p>
         </div>
 
         {/* Card */}

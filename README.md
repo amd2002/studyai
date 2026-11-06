@@ -1,3 +1,16 @@
+# 汉字圈 (Hànzì quān) — lire et écrire ses caractères
+
+Branche `hanzi` : StudyAI transformé en app de caractères (voir `HANDBOOK.md`).
+
+- **Ajouter un cours** : onglet 课 Cours → copier le prompt → le coller dans Claude avec la photo de la leçon → coller la réponse → vérifier → ajouter. Les nouveaux caractères entrent dans le programme, les anciens gardent leur progression.
+- **Réviser** : 读 lecture et 写 écriture (tracé au doigt vérifié trait par trait), répétition espacée, une carte ratée revient dans la session jusqu'à réussite.
+- **Écouter** : boucle audio caractère → phrase du cours → sens en français.
+- Base Supabase : `supabase/migrations/0002_hanzi.sql` (déjà appliquée sur le projet `studyai`).
+- Données de traits auto-hébergées dans `public/strokes/` (hanzi-writer-data, licence Arphic, voir `public/strokes/LICENSE`).
+- Tests : `npm test`.
+
+---
+
 # 🧠 StudyAI — Cahier Intelligent (100% gratuit)
 
 Photographie un cours → l'IA (Claude) génère explication, vocabulaire classé,

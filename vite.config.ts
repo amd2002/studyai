@@ -14,10 +14,19 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,png,svg}'],
+        // Données de traits : chargées à la demande puis gardées hors ligne.
+        runtimeCaching: [{
+          urlPattern: /\/strokes\/\d+\.json$/,
+          handler: 'CacheFirst',
+          options: { cacheName: 'strokes', expiration: { maxEntries: 120 } },
+        }],
+      },
       manifest: {
-        name: 'StudyAI — Cahier Intelligent',
-        short_name: 'StudyAI',
-        theme_color: '#6c63ff',
+        name: '汉字圈 — Caractères chinois',
+        short_name: '汉字圈',
+        theme_color: '#080810',
         background_color: '#0a0a0f',
         display: 'standalone',
         orientation: 'portrait',

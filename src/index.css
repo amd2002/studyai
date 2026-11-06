@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@400;600;700;800&family=Syne+Mono&family=Noto+Serif+SC:wght@400;700&display=swap');
+/* Pas de Google Fonts : bloqué en Chine. Polices du système (PingFang / Kaiti sur iPhone). */
 
 :root {
   --bg: #080810;
@@ -28,7 +28,7 @@
 
 * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
 html, body { height: 100%; overflow: hidden; }
-body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt); }
+body { font-family: -apple-system, 'PingFang SC', 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--txt); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 3px; }
@@ -105,3 +105,5 @@ body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   height: 1px;
 }
+
+.tabular-nums { font-variant-numeric: tabular-nums; }

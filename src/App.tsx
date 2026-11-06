@@ -1,28 +1,29 @@
 import { useState } from 'react'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
-import { supabase } from '@/lib/supabase'
+import { StoreProvider } from '@/context/StoreContext'
 import Login from '@/pages/Login'
-import Home from '@/pages/Home'
-import Scanner from '@/pages/Scanner2'
-import Library from '@/pages/Library'
-import Quiz from '@/pages/Quiz'
-import Slate from '@/pages/Slate'
-import Settings from '@/pages/Settings'
+import HzHome from '@/pages/HzHome'
+import HzReview from '@/pages/HzReview'
+import HzListen from '@/pages/HzListen'
+import HzChars from '@/pages/HzChars'
+import HzCourses from '@/pages/HzCourses'
+import HzSettings from '@/pages/HzSettings'
+import type { Track } from '@/types/hanzi'
 
 const TABS = [
-  { id: 'home',    icon: '⌂',  label: 'Accueil' },
-  { id: 'scanner', icon: '◎',  label: 'Scanner' },
-  { id: 'slate',   icon: '✦',  label: 'Ardoise' },
-  { id: 'quiz',    icon: '◈',  label: 'Quiz'    },
-  { id: 'library', icon: '▤',  label: 'Cours'   },
+  { id: 'home',    icon: '家', label: 'Accueil' },
+  { id: 'review',  icon: '练', label: 'Réviser' },
+  { id: 'listen',  icon: '听', label: 'Écouter' },
+  { id: 'chars',   icon: '字', label: 'Caractères' },
+  { id: 'courses', icon: '课', label: 'Cours' },
 ]
 
 function AppInner() {
   const { user, loading } = useAuth()
   const [tab, setTab] = useState('home')
+  const [track, setTrack] = useState<Track>('read')
+  const [reviewKey, setReviewKey] = useState(0)
   const [showSettings, setShowSettings] = useState(false)
-  const [quizData, setQuizData] = useState<any[]>([])
-  const [flashData, setFlashData] = useState<any[]>([])
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-bg gap-4">
@@ -30,84 +31,57 @@ function AppInner() {
       <p className="text-muted text-sm font-mono tracking-widest">CHARGEMENT</p>
     </div>
   )
-
   if (!user) return <Login />
 
-  const goQuiz = (quiz: any[], words: any[]) => {
-    setQuizData(quiz); setFlashData(words); setTab('quiz')
-  }
-
-  const initials = user.email?.slice(0,2).toUpperCase() || 'ME'
+  const startReview = (t: Track) => { setTrack(t); setReviewKey(k => k + 1); setTab('review') }
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto bg-bg overflow-hidden" style={{ background: 'linear-gradient(160deg, #0a0a1a 0%, #080810 60%, #0a0810 100%)' }}>
-
-      {/* Header */}
-      <header className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(124,111,255,0.08)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 0 16px rgba(124,111,255,0.4)' }}>
-            <span className="text-white text-sm font-bold">S</span>
+    <StoreProvider>
+      <div className="flex flex-col h-[100dvh] max-w-md mx-auto bg-bg overflow-hidden" style={{ background: 'linear-gradient(160deg, #0a0a1a 0%, #080810 60%, #0a0810 100%)' }}>
+        <header className="flex items-center justify-between px-5 pb-3 flex-shrink-0" style={{ paddingTop: 'max(16px, env(safe-area-inset-top))', borderBottom: '1px solid rgba(124,111,255,0.08)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 0 16px rgba(124,111,255,0.4)' }}>
+              <span className="text-white text-base font-ser">字</span>
+            </div>
+            <span className="font-ser font-bold text-base text-txt">汉字圈</span>
           </div>
-          <div>
-            <span className="font-syne font-bold text-base text-txt">Study</span>
-            <span className="font-syne font-bold text-base text-accent2">AI</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowSettings(true)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-accent2 border border-accent/30 transition-all active:scale-90"
-            style={{ background: 'rgba(124,111,255,0.1)' }}>
-            {initials}
+          <button onClick={() => setShowSettings(s => !s)} aria-label="Réglages"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-accent2 border border-accent/30" style={{ background: 'rgba(124,111,255,0.1)' }}>
+            {user.email?.slice(0, 2).toUpperCase() || 'ME'}
           </button>
-          <button onClick={() => supabase.auth.signOut()}
-            className="text-xs px-3 py-1.5 rounded-lg text-muted border transition hover:text-txt"
-            style={{ borderColor: 'rgba(124,111,255,0.15)', background: 'rgba(124,111,255,0.05)' }}>
-            Sortir
-          </button>
-        </div>
-      </header>
+        </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        {showSettings ? (
-          <Settings onClose={() => setShowSettings(false)} />
-        ) : (
-          <>
-            <div className={tab === 'home'    ? 'h-full anim-up' : 'hidden'}><Home    onGoQuiz={goQuiz} onTab={setTab} /></div>
-            <div className={tab === 'scanner' ? 'h-full anim-up' : 'hidden'}><Scanner onGoQuiz={goQuiz} /></div>
-            <div className={tab === 'slate'   ? 'h-full anim-up' : 'hidden'}><Slate /></div>
-            <div className={tab === 'quiz'    ? 'h-full anim-up' : 'hidden'}><Quiz quiz={quizData} words={flashData} /></div>
-            <div className={tab === 'library' ? 'h-full anim-up' : 'hidden'}><Library onGoQuiz={goQuiz} /></div>
-          </>
+        <div className="flex-1 overflow-hidden">
+          {showSettings ? <HzSettings onClose={() => setShowSettings(false)} /> : (
+            <>
+              {tab === 'home' && <HzHome onReview={startReview} onTab={setTab} />}
+              {tab === 'review' && <HzReview key={`${track}-${reviewKey}`} track={track} onTrack={startReview} onExit={() => setTab('home')} />}
+              {tab === 'listen' && <HzListen />}
+              {tab === 'chars' && <HzChars />}
+              {tab === 'courses' && <HzCourses />}
+            </>
+          )}
+        </div>
+
+        {!showSettings && (
+          <nav className="flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)', background: 'rgba(8,8,16,0.95)', backdropFilter: 'blur(30px)', borderTop: '1px solid rgba(124,111,255,0.1)' }}>
+            <div className="flex px-2 py-1">
+              {TABS.map(t => {
+                const active = tab === t.id
+                return (
+                  <button key={t.id} onClick={() => (t.id === 'review' ? startReview(track) : setTab(t.id))} className="flex-1 flex flex-col items-center py-2 gap-1">
+                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={active ? { background: 'rgba(124,111,255,0.15)', boxShadow: '0 0 16px rgba(124,111,255,0.2)' } : {}}>
+                      <span className={`font-ser text-lg ${active ? 'text-accent2' : 'text-muted'}`}>{t.icon}</span>
+                    </div>
+                    <span className={`text-[9px] font-mono tracking-wider ${active ? 'text-accent2' : 'text-muted'}`}>{t.label.toUpperCase()}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </nav>
         )}
       </div>
-
-      {/* Bottom Tab Bar */}
-      {!showSettings && (
-        <nav className="flex-shrink-0 safe-bottom" style={{ background: 'rgba(8,8,16,0.95)', backdropFilter: 'blur(30px)', borderTop: '1px solid rgba(124,111,255,0.1)' }}>
-          <div className="flex px-2 py-1">
-            {TABS.map(t => {
-              const active = tab === t.id
-              return (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  className="flex-1 flex flex-col items-center py-2 gap-1 relative transition-all duration-200">
-                  {active && (
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #7C6FFF, transparent)' }} />
-                  )}
-                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all duration-200 ${active ? 'scale-110' : 'scale-100'}`}
-                    style={active ? { background: 'rgba(124,111,255,0.15)', boxShadow: '0 0 16px rgba(124,111,255,0.2)' } : {}}>
-                    <span className={`text-lg font-bold transition-all ${active ? 'text-accent2' : 'text-muted'}`}>{t.icon}</span>
-                  </div>
-                  <span className={`text-[9px] font-mono tracking-wider transition-all ${active ? 'text-accent2' : 'text-muted'}`}>
-                    {t.label.toUpperCase()}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </nav>
-      )}
-    </div>
+    </StoreProvider>
   )
 }
 
