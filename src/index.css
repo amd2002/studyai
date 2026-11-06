@@ -107,3 +107,5 @@ body { font-family: -apple-system, 'PingFang SC', 'Segoe UI', Roboto, sans-serif
 }
 
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }

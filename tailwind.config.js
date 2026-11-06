@@ -18,6 +18,8 @@ export default {
         green:   '#10b981',
         danger:  '#ef4444',
         cyan:    '#22d3ee',
+        seal:    '#E0483E',
+        ink:     '#11101F',
         txt:     '#F0EEF8',
         txt2:    '#C4C0D8',
         muted:   '#6B6880',

@@ -40,10 +40,8 @@ function AppInner() {
       <div className="flex flex-col h-[100dvh] max-w-md mx-auto bg-bg overflow-hidden" style={{ background: 'linear-gradient(160deg, #0a0a1a 0%, #080810 60%, #0a0810 100%)' }}>
         <header className="flex items-center justify-between px-5 pb-3 flex-shrink-0" style={{ paddingTop: 'max(16px, env(safe-area-inset-top))', borderBottom: '1px solid rgba(124,111,255,0.08)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7C6FFF, #A78BFA)', boxShadow: '0 0 16px rgba(124,111,255,0.4)' }}>
-              <span className="text-white text-base font-ser">字</span>
-            </div>
-            <span className="font-ser font-bold text-base text-txt">汉字圈</span>
+            <span className="w-8 h-8 rounded-[8px] bg-seal text-white font-ser text-[18px] flex items-center justify-center rotate-[-4deg]">圈</span>
+            <span className="font-ser text-[18px] text-txt">汉字圈</span>
           </div>
           <button onClick={() => setShowSettings(s => !s)} aria-label="Réglages"
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-accent2 border border-accent/30" style={{ background: 'rgba(124,111,255,0.1)' }}>
@@ -70,10 +68,10 @@ function AppInner() {
                 const active = tab === t.id
                 return (
                   <button key={t.id} onClick={() => (t.id === 'review' ? startReview(track) : setTab(t.id))} className="flex-1 flex flex-col items-center py-2 gap-1">
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={active ? { background: 'rgba(124,111,255,0.15)', boxShadow: '0 0 16px rgba(124,111,255,0.2)' } : {}}>
-                      <span className={`font-ser text-lg ${active ? 'text-accent2' : 'text-muted'}`}>{t.icon}</span>
+                    <div className={`w-10 h-8 rounded-xl flex items-center justify-center ${active ? 'bg-s3' : ''}`}>
+                      <span className={`font-ser text-[20px] ${active ? 'text-gold' : 'text-muted'}`}>{t.icon}</span>
                     </div>
-                    <span className={`text-[9px] font-mono tracking-wider ${active ? 'text-accent2' : 'text-muted'}`}>{t.label.toUpperCase()}</span>
+                    <span className={`text-[10px] ${active ? 'text-txt font-semibold' : 'text-muted'}`}>{t.label}</span>
                   </button>
                 )
               })}

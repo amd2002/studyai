@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { examplesFor, useStore } from '@/context/StoreContext'
 import { isDue, isHard, isNew, today } from '@/lib/srs'
 import { speak, stopSpeech, ttsAvailable } from '@/lib/tts'
-import { Btn, Label, Page } from '@/components/ui'
+import { Btn, Label, Page, Tian } from '@/components/ui'
 
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
@@ -48,27 +48,27 @@ export default function HzListen() {
 
   return (
     <Page>
-      <h2 className="font-syne font-bold text-xl mb-1">Écouter en boucle</h2>
-      <p className="text-xs text-muted mb-5">Caractère → phrase de ton cours → sens en français. Sans regarder l'écran.</p>
+      <h2 className="text-[26px] font-bold text-txt">Écouter</h2>
+      <p className="text-[14px] text-muted mb-5">Le caractère, puis une phrase de ton cours, puis le sens en français, en boucle. Tu peux ranger le téléphone.</p>
       {!ttsAvailable() && <p className="text-danger text-xs mb-4">La voix n'est pas disponible sur cet appareil.</p>}
 
       {c ? (
         <div className="text-center mb-6">
-          <div className="font-ser text-[110px] leading-none">{c.char}</div>
-          <div className="text-xl text-accent3 italic mt-2">{c.pinyin}</div>
-          <div className="text-sm text-txt2">{c.meaning_fr}</div>
-          {ex && <div className="mt-4"><div className="font-ser text-lg">{ex.zh}</div><div className="text-xs text-accent3 italic">{ex.py}</div><div className="text-xs text-txt2">{ex.fr}</div></div>}
+          <Tian size={200} className="mx-auto"><span className="font-ser text-[130px] leading-none text-txt">{c.char}</span></Tian>
+          <div className="text-[24px] text-accent3 italic mt-4">{c.pinyin}</div>
+          <div className="text-[15px] text-txt">{c.meaning_fr}</div>
+          {ex && <div className="mt-5 px-2"><div className="font-ser text-[19px] text-txt">{ex.zh}</div><div className="text-[13px] text-accent3 italic">{ex.py}</div><div className="text-[13px] text-txt2">{ex.fr}</div></div>}
         </div>
       ) : (
         <>
           <Label>Quoi écouter</Label>
-          <select value={sel} onChange={e => setSel(e.target.value)} className="w-full rounded-2xl bg-s2 border border-border px-3 py-3 text-sm mb-4">
+          <select value={sel} onChange={e => setSel(e.target.value)} className="w-full rounded-2xl bg-s1 border border-border px-3 py-3 text-[15px] mb-5">
             <option value="today">Les caractères du jour</option>
             <option value="hard">Les caractères difficiles</option>
             <option value="all">Tous mes caractères</option>
             {store.courses.map(x => <option key={x.id} value={x.id}>Cours : {x.title}</option>)}
           </select>
-          <div className="flex flex-col gap-3 mb-6 text-sm">
+          <div className="flex flex-col gap-4 mb-6 text-[15px] rounded-[22px] bg-s1 border border-border p-4">
             <label className="flex justify-between items-center"><span>Dire le sens en français</span><input type="checkbox" checked={withFr} onChange={e => setWithFr(e.target.checked)} /></label>
             <label className="flex justify-between items-center"><span>Voix lente</span><input type="checkbox" checked={slow} onChange={e => setSlow(e.target.checked)} /></label>
             <label className="flex justify-between items-center gap-4"><span>Pause pour répéter</span>
@@ -76,7 +76,7 @@ export default function HzListen() {
           </div>
         </>
       )}
-      {!playing ? <Btn className="w-full" onClick={start}>▶ Lancer la boucle</Btn> : <Btn kind="ghost" className="w-full" onClick={stop}>■ Arrêter</Btn>}
+      {!playing ? <Btn className="w-full" onClick={start}>Lancer la boucle</Btn> : <Btn kind="ghost" className="w-full" onClick={stop}>Arrêter</Btn>}
     </Page>
   )
 }

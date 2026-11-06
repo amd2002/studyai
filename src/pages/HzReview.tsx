@@ -5,7 +5,7 @@ import { saveReview, updateCharInfo } from '@/lib/data'
 import { say } from '@/lib/tts'
 import { getNewPerDay } from '@/pages/HzSettings'
 import { Writer } from '@/components/Writer'
-import { Btn, Label, Page, Zh } from '@/components/ui'
+import { Btn, Label, Page, Tian, Zh } from '@/components/ui'
 import type { Track } from '@/types/hanzi'
 
 export default function HzReview({ track, onTrack, onExit }: { track: Track; onTrack: (t: Track) => void; onExit: () => void }) {
@@ -49,16 +49,23 @@ export default function HzReview({ track, onTrack, onExit }: { track: Track; onT
   const done = new Set(queue.map(q => q.char))
   const finished = total - done.size
 
+  const tile = Math.min(300, (typeof window !== 'undefined' ? window.innerWidth : 390) - 72)
+
   const Header = (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex gap-1 p-1 rounded-xl bg-s2 border border-border">
-        {(['read', 'write'] as Track[]).map(t => (
-          <button key={t} onClick={() => onTrack(t)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${t === track ? 'bg-accent text-white' : 'text-muted'}`}>
-            {t === 'read' ? '读 Lire' : '写 Écrire'}
-          </button>
-        ))}
+    <div className="mb-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex gap-1 p-1 rounded-xl bg-s1 border border-border">
+          {(['read', 'write'] as Track[]).map(t => (
+            <button key={t} onClick={() => onTrack(t)} className={`px-3.5 py-1.5 rounded-lg text-[14px] ${t === track ? 'bg-s3 text-txt font-semibold' : 'text-muted'}`}>
+              <span className="font-ser mr-1">{t === 'read' ? '读' : '写'}</span>{t === 'read' ? 'Lire' : 'Écrire'}
+            </button>
+          ))}
+        </div>
+        <span className="text-[13px] text-muted tabular-nums">{finished} sur {total}</span>
       </div>
-      <span className="text-xs text-muted tabular-nums">{finished}/{total} · {left} restante{left > 1 ? 's' : ''}</span>
+      <div className="h-[3px] rounded-full bg-s3 overflow-hidden">
+        <div className="h-full bg-accent2 motion-safe:transition-all" style={{ width: `${total ? (finished / total) * 100 : 0}%` }} />
+      </div>
     </div>
   )
 
@@ -67,11 +74,11 @@ export default function HzReview({ track, onTrack, onExit }: { track: Track; onT
     <Page>
       {Header}
       <div className="text-center mt-16">
-        <div className="font-ser text-5xl text-gold mb-2">好！</div>
-        <div className="text-sm text-accent3 italic">Hǎo!</div>
-        <div className="text-sm text-txt2 mb-6">Bien joué !</div>
-        <p className="text-sm text-txt2 mb-6">
-          {total ? `Session terminée : ${total} caractère${total > 1 ? 's' : ''}, ${errors} erreur${errors > 1 ? 's' : ''} rattrapée${errors > 1 ? 's' : ''}.`
+        <Tian size={120} className="mx-auto mb-4"><span className="font-ser text-[72px] leading-none text-green">好</span></Tian>
+        <div className="text-[13px] text-accent3 italic">hǎo</div>
+        <div className="text-[15px] text-txt mb-4">Bien joué</div>
+        <p className="text-[15px] text-txt2 mb-6 max-w-xs mx-auto">
+          {total ? `${total} caractère${total > 1 ? 's' : ''} révisé${total > 1 ? 's' : ''}${errors ? `, dont ${errors} erreur${errors > 1 ? 's' : ''} rattrapée${errors > 1 ? 's' : ''} en boucle` : ' sans erreur'}.`
             : track === 'write' ? 'Rien à écrire pour l’instant. Les caractères s’ouvrent à l’écriture quand tu as réussi à les lire une première fois.'
             : 'Rien à revoir aujourd’hui. Reviens demain, ou ajoute un cours.'}
         </p>
@@ -88,24 +95,20 @@ export default function HzReview({ track, onTrack, onExit }: { track: Track; onT
   return (
     <Page>
       {Header}
-      <div className="h-1.5 rounded-full bg-s3 overflow-hidden mb-5">
-        <div className="h-full bg-grad-accent transition-all" style={{ width: `${total ? (finished / total) * 100 : 0}%` }} />
-      </div>
-      {card.isNew && !graded.has(c.char) && <div className="text-center mb-2"><span className="text-[10px] font-mono tracking-widest text-gold bg-gold/10 rounded-full px-2 py-0.5">NOUVEAU</span></div>}
-
+      <div className="h-5 text-center">{card.isNew && !graded.has(c.char) && <span className="text-[12px] font-semibold text-gold">Nouveau caractère</span>}</div>
       {track === 'read' ? (
         <>
-          <div className="text-center my-6">
-            <div className="font-ser text-[120px] leading-none text-txt">{c.char}</div>
+          <div className="my-4">
+            <Tian size={shown ? 150 : tile} className="mx-auto motion-safe:transition-all motion-safe:duration-200"><span className="font-ser leading-none text-txt" style={{ fontSize: (shown ? 150 : tile) * 0.66 }}>{c.char}</span></Tian>
           </div>
           {!shown ? (
             <>
-              <p className="text-center text-xs text-muted mb-4">Dis le pinyin et le sens dans ta tête, puis vérifie.</p>
+              <p className="text-center text-[14px] text-muted mb-4">Dis le pinyin et le sens à voix haute, puis vérifie.</p>
               <Btn className="w-full" onClick={() => { setShown(true); say(c.char) }}>Voir la réponse</Btn>
             </>
           ) : (
             <Answer c={c} ex={ex} words={words}>
-              <div className="grid grid-cols-2 gap-2 mt-5">
+              <div className="grid grid-cols-2 gap-2 mt-4">
                 <Btn kind="bad" onClick={() => answer(false)}>Pas encore</Btn>
                 <Btn kind="ok" onClick={() => answer(true)}>Je savais</Btn>
               </div>
@@ -114,17 +117,17 @@ export default function HzReview({ track, onTrack, onExit }: { track: Track; onT
         </>
       ) : (
         <>
-          <div className="text-center mb-4">
-            <div className="text-xl text-accent3 italic">{c.pinyin}</div>
-            <div className="text-sm text-txt2">{c.meaning_fr}</div>
-            {ex[0] && <div className="mt-3"><Zh zh={fill} py={ex[0].py} fr={ex[0].fr} size="sm" /></div>}
+          <div className="text-center mb-3">
+            <div className="text-[24px] text-accent3 italic leading-tight">{c.pinyin}</div>
+            <div className="text-[15px] text-txt">{c.meaning_fr}</div>
+            {ex[0] && !writeState && <div className="mt-2 font-ser text-[16px] text-txt2">{fill}</div>}
           </div>
-          <Writer char={c.char} mode={demo ? 'animate' : writeState ? 'show' : 'quiz'} nonce={nonce}
+          <Writer char={c.char} size={Math.min(tile, 240)} mode={demo ? 'animate' : writeState ? 'show' : 'quiz'} nonce={nonce}
             onDone={m => { setWriteState({ mistakes: m }); say(c.char) }}
             onMissing={() => { updateCharInfo(c.char, { has_strokes: false }); patchChar(c.char, { has_strokes: false }) }} />
           {!writeState ? (
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <Btn kind="ghost" onClick={() => setDemo(d => !d)}>{demo ? 'Essayer' : 'Voir l’ordre des traits'}</Btn>
+              <Btn kind="ghost" onClick={() => setDemo(d => !d)}>{demo ? 'Je trace' : 'Ordre des traits'}</Btn>
               <Btn kind="bad" onClick={() => { setWriteState({ mistakes: 99 }); setDemo(false) }}>Je ne sais pas</Btn>
             </div>
           ) : (
@@ -146,13 +149,14 @@ export default function HzReview({ track, onTrack, onExit }: { track: Track; onT
 
 function Answer({ c, ex, words, children }: { c: { char: string; pinyin: string; meaning_fr: string }; ex: { zh: string; py: string; fr: string }[]; words: { zh: string; py: string; fr: string }[]; children: React.ReactNode }) {
   return (
-    <div className="rounded-3xl p-5 bg-s1/90 border border-border mt-2">
+    <div className="rounded-[22px] p-5 bg-s1 border border-border mt-2 motion-safe:animate-[rise_.22s_ease-out]">
       {ex.length > 0 || words.length > 0 ? (
         <>
           <div className="flex items-center justify-between">
-            <div><div className="text-2xl text-accent3 italic">{c.pinyin}</div><div className="text-base text-txt">{c.meaning_fr || '(sens à compléter)'}</div></div>
+            <div><div className="text-[26px] text-accent3 italic leading-tight">{c.pinyin}</div><div className="text-[16px] text-txt">{c.meaning_fr || 'Sens à compléter'}</div></div>
             <button aria-label="Écouter" onClick={() => say(c.char)} className="w-11 h-11 rounded-2xl bg-s2 border border-border text-accent2">▶</button>
           </div>
+          {children}
           {words.length > 0 && <div className="mt-4"><Label>Mots</Label><div className="flex flex-col gap-2">{words.map(w => <Zh key={w.zh} {...w} hl={c.char} size="sm" />)}</div></div>}
           {ex.length > 0 && <div className="mt-4"><Label>Dans tes cours</Label><div className="flex flex-col gap-3">
             {ex.map((e, i) => (
@@ -162,8 +166,7 @@ function Answer({ c, ex, words, children }: { c: { char: string; pinyin: string;
               </div>))}
           </div></div>}
         </>
-      ) : null}
-      {children}
+      ) : children}
     </div>
   )
 }
